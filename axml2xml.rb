@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-require 'zip/zip'
 
 DEBUG = true
 
@@ -37,10 +36,23 @@ end
 data = nil
 
 # Get just the AndroidManifest.xml from the APK file
-Zip::ZipFile.foreach(ARGV[0]) do |f|
-  if f.name.match(/AndroidManifest.xml/)
-    data = f.get_input_stream.read
+begin
+  require 'zip/zip'
+  begin
+    Zip::ZipFile.foreach(ARGV[0]) do |f|
+      if f.name.match(/AndroidManifest.xml/)
+        data = f.get_input_stream.read
+      end
+    end
+  rescue Zip::ZipError
+    data = File.open(ARGV[0], "rb").read
   end
+rescue LoadError
+  data = File.open(ARGV[0], "rb").read
+end
+
+if data.length > 1024*1024
+  abort('Invalid source file')
 end
 
 num_strings = read_word(data, 16)
